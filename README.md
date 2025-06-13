@@ -1,54 +1,62 @@
+# ✅ FINAL README.md
+
 # GitHub Issue Assistant 🚀
 
-## 📌 Overview
-A simple, robust AI-powered GitHub Issue Analyzer that summarizes any public issue and classifies it, following the Seedling Labs Craft Case specifications exactly.
+AI-powered GitHub Issue summarizer using **FastAPI**, **LangChain + Gemini**, and **Streamlit**.
+
+---
+
+## 📌 Submission Note
+
+Hello Seedling Labs Team,
+
+I’m submitting my completed **AI-Powered GitHub Issue Assistant** as per the Craft Case instructions.
+
+✅ **Key Highlights:**
+- Implements a FastAPI backend that fetches any public GitHub issue and uses LangChain with Gemini to generate a structured JSON output.
+- The JSON output strictly matches the required schema: `summary`, `type`, `priority_score` (with justification), `suggested_labels` (2–3 labels), and `potential_impact` (real sentence for bugs, "null" string otherwise).
+- Robust post-processing guarantees valid JSON, even with LLM quirks.
+- Clean, user-friendly Streamlit frontend that displays the JSON clearly and provides a reliable Copy JSON button (using modern clipboard API).
+- Handles API errors, quota limits, and invalid inputs gracefully.
+- Uses `.env` for secure API key management; `.env.example` provided.
+
+✅ **How to run:**
+1. Clone the repo  
+2. Create `.env` from `.env.example` and add your Gemini API key  
+3. `pip install -r requirements.txt`  
+4. Run backend: `uvicorn main:app --reload`  
+5. Run frontend: `streamlit run app.py`  
+6. Test at [http://localhost:8501](http://localhost:8501)
+
+I have carefully verified that it aligns with the submission checklist and rubric.
+
+Thank you for reviewing my submission — I look forward to your feedback!
+
+**Best regards,**  
+G Krishna Teja
+
+---
 
 ## ✅ Features
-- Produces JSON with `summary`, `type`, `priority_score` (with justification), `suggested_labels` (2–3 labels), and `potential_impact` (sentence for bugs, "null" string otherwise).
-- Uses FastAPI for backend, LangChain with Gemini for AI, and Streamlit for a clean UI.
-- Shows clear JSON output and a working Copy JSON button.
-- Handles rate limits and API errors gracefully.
+
+- Clean AI-generated JSON matching Seedling Labs spec  
+- Handles `bug` vs non-bug `potential_impact`  
+- Copy JSON button (browser-native, works everywhere)  
+- Runs locally with clear instructions
 
 ## ⚙️ Requirements
+
 - Python 3.10+
 - Gemini API Key (store in `.env`)
 
-## 🚀 How to Run Locally
+## 🔑 .env variables
 
-1️⃣ **Clone this repo:**
-```bash
-git clone <your-repo-url>
-cd github-issue-assistant
-```
+| Key | Description |
+| --- | --- |
+| `GOOGLE_API_KEY` | Your Gemini API key |
 
-2️⃣ **Set up `.env`:**
-```
-cp .env.example .env
-# Edit .env and paste your Gemini API key
-```
+## ✅ Output JSON Format
 
-3️⃣ **Install dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-4️⃣ **Start the FastAPI backend:**
-```bash
-uvicorn main:app --reload
-```
-
-5️⃣ **Start the Streamlit frontend:**
-```bash
-streamlit run app.py
-```
-
-6️⃣ **Open the app:**
-Go to [http://localhost:8501](http://localhost:8501) and test your repo URL and issue number.
-
-## 🔑 Environment Variables
-- `GOOGLE_API_KEY`: your Gemini API key
-
-## ✅ Output JSON Format (as per Craft Case)
 ```json
 {
   "summary": "A one-sentence summary.",
@@ -60,8 +68,8 @@ Go to [http://localhost:8501](http://localhost:8501) and test your repo URL and 
 ```
 
 ## 📝 Notes
-- Only public GitHub issues are supported.
-- Handles API quota errors with clear messages.
-- Fully meets Seedling Labs submission & rubric requirements.
 
-✅ Happy coding & good luck with your Craft Case! 🚀
+- Only public GitHub issues are supported.
+- Handles API quota errors gracefully.
+
+✅ Happy coding & good luck with Seedling Labs! 🚀
