@@ -1,4 +1,8 @@
-# ✅ FINAL main.py
+"""
+FastAPI backend for Seedling Labs Craft Case.
+Fetches GitHub issue, sends to LangChain Gemini,
+returns clean JSON matching the spec.
+"""
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel

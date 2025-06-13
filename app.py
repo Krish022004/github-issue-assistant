@@ -1,4 +1,7 @@
-# ✅ FINAL app.py
+"""
+Streamlit frontend for Seedling Labs Craft Case.
+Calls FastAPI backend and displays result.
+"""
 
 import streamlit as st
 import requests
