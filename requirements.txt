@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+httpx
+streamlit
+python-dotenv
+langchain
+langchain-google-genai
+pyperclip
