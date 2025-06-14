@@ -1,6 +1,6 @@
 """
-Modern Streamlit frontend with animations, styling, dark mode.
-Connects to FastAPI backend at /analyze and supports multiple issues.
+✅ Modern Streamlit frontend for GitHub Issue Assistant.
+Calls FastAPI backend deployed on Render.
 """
 
 import streamlit as st
@@ -16,25 +16,34 @@ st.set_page_config(
 )
 
 # === ✅ Top-right dark mode toggle ===
-col1, col2 = st.columns([8, 1], gap="small")
+col1, col2 = st.columns([8, 1])
 with col2:
     dark_mode = st.toggle("🌙 Dark Mode")
 
-# === ✅ Strong dark mode styling ===
 if dark_mode:
     st.markdown("""
     <style>
-    html, body, .main, .stApp { background-color: #0e1117 !important; color: #c9d1d9 !important; }
-    [data-testid="stSidebar"] { background-color: #161b22 !important; }
-    input, textarea { background-color: #161b22 !important; color: #c9d1d9 !important; }
+    html, body, .main, .stApp {
+        background-color: #0e1117 !important;
+        color: #c9d1d9 !important;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #161b22 !important;
+    }
+    input, textarea {
+        background-color: #161b22 !important;
+        color: #c9d1d9 !important;
+    }
     .stButton>button, .stDownloadButton>button {
-        background-color: #21262d !important; color: #c9d1d9 !important; border: 1px solid #30363d;
+        background-color: #21262d !important;
+        color: #c9d1d9 !important;
+        border: 1px solid #30363d;
         transition: 0.3s;
     }
     .stButton>button:hover, .stDownloadButton>button:hover {
-        background-color: #30363d !important; transform: scale(1.02);
+        background-color: #30363d !important;
+        transform: scale(1.02);
     }
-    .stCodeBlock, pre, code { background-color: #161b22 !important; color: #c9d1d9 !important; }
     .card {
         background-color: #21262d !important;
         padding: 1rem;
@@ -44,78 +53,89 @@ if dark_mode:
     </style>
     """, unsafe_allow_html=True)
 
-# === ✅ Title ===
+# === ✅ Fancy title ===
 st.markdown(
     "<h1 style='text-align: center;'>✨ <span style='color:#f63366;'>AI-Powered GitHub Issue Assistant</span> ✨</h1>",
     unsafe_allow_html=True
 )
-st.caption("Analyze & summarize GitHub issues instantly with AI, LangChain & Gemini.")
+st.caption("Analyze & summarize multiple GitHub issues with style & animations.")
 
 st.markdown("---")
 
-# === ✅ Input form ===
+# === ✅ Stylish Input Card ===
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.header("🔗 Repository Details")
-    st.write("Enter GitHub repo & one or more issue numbers (comma-separated):")
-    repo_url = st.text_input("Repository URL", value="https://github.com/facebook/react")
-    issue_numbers = st.text_input("Issue Number(s)", value="1", help="e.g. 1 or 12, 45, 99")
+    st.write("Enter a public GitHub repository and issue numbers (comma-separated):")
+    repo_url = st.text_input(
+        "Repository URL",
+        value="https://github.com/facebook/react"
+    )
+    issue_numbers = st.text_input(
+        "Issue Number(s)",
+        value="1",
+        help="E.g., 1, 2, 3"
+    )
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
-# === ✅ Analyze button ===
+# === ✅ Analyze Button ===
+# ✅ Check inputs first
 if st.button("🚀 Analyze Issues"):
-    progress = st.progress(0, text="Preparing...")
+    if not repo_url.strip() or not issue_numbers.strip():
+        st.warning("⚠️ Please enter both the repository URL and at least one issue number.")
+        st.stop()
+
+    progress = st.progress(0, text="Preparing analysis...")
 
     for pct in range(1, 80, 10):
-        time.sleep(0.1)
-        progress.progress(pct, text=f"Analyzing... {pct}%")
+        time.sleep(0.05)
+        progress.progress(pct, text=f"🔍 Processing... {pct}%")
 
     payload = {
         "repo_url": repo_url,
         "issue_numbers": issue_numbers
     }
 
-    # ✅ FIXED FastAPI endpoint
-    response = requests.post("https://github-issue-assistant.onrender.com/analyze", json=payload)
+    backend_url = "https://github-issue-assistant.onrender.com/analyze"
 
-    progress.progress(100, text="Finalizing...")
+    response = requests.post(backend_url, json=payload)
+
+    progress.progress(100, text="✨ Finalizing...")
 
     if response.status_code == 200:
         data = response.json()
         st.success(f"✅ Done in {data['analysis_time_sec']} seconds!")
-        st.toast("🎉 JSON ready to copy or download!")
+        st.toast("🎉 Analysis ready!")
 
         results = data["results"]
 
         for item in results:
             with st.expander(f"📂 Issue #{item['issue_number']}"):
                 if "result" in item:
-                    result_json = item["result"]
-                    result_str = json.dumps(result_json, indent=2)
-                    st.json(result_json)
-
-                    # ✅ Copy button
-                    st.code(result_str, language="json")
-                    st.markdown(f"""
-                        <textarea id="json-{item['issue_number']}" style="width:100%;height:150px;">{result_str}</textarea><br>
-                        <button onclick="navigator.clipboard.writeText(document.getElementById('json-{item['issue_number']}').value);alert('Copied to clipboard!')">📋 Copy JSON</button>
-                    """, unsafe_allow_html=True)
-
+                    st.json(item["result"])
+                    st.code(json.dumps(item["result"], indent=2), language="json")
                 else:
-                    st.error(f"❌ Error: {item['error']}")
+                    st.error(f"⚠️ {item['error']}")
 
-        # ✅ Download
         st.download_button(
             "⬇️ Download All Results",
             data=json.dumps(results, indent=2),
-            file_name="github_issue_analysis.json",
+            file_name="analysis_results.json",
             mime="application/json"
         )
+
     else:
         st.error(f"❌ Error: {response.status_code} - {response.text}")
+        if response.status_code in [403, 404, 502]:
+            st.info("👉 Ensure your FastAPI backend is deployed and awake on Render.")
+        elif response.status_code == 500:
+            st.error("⚠️ Internal server error. Please check your backend logs for details.")
+        else:
+            st.error("⚠️ Unexpected error. Please try again later or contact support.")
+
 
 # === ✅ Footer ===
 st.markdown("---")
-st.caption("Built by G Krishna Teja | [GitHub](https://github.com/Krish022004/github-issue-assistant) | Powered by LangChain + Gemini + Streamlit")
+st.caption("Built by G Krishna Teja | [GitHub Source](https://github.com/Krish022004/github-issue-assistant) | Powered by Streamlit + FastAPI + Gemini AI")
