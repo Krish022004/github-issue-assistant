@@ -83,7 +83,8 @@ if st.button("🚀 Analyze Issues"):
         "repo_url": repo_url,
         "issue_numbers": issue_numbers
     }
-    response = requests.post("http://127.0.0.1:8000/analyze", json=payload)
+    response = requests.post("https://YOUR-FASTAPI-URL.onrender.com/analyze", json=payload)
+
 
     progress.progress(100, text="✨ Finalizing...")
 
