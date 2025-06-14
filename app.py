@@ -83,7 +83,7 @@ if st.button("🚀 Analyze Issues"):
         "repo_url": repo_url,
         "issue_numbers": issue_numbers
     }
-    response = requests.post("https://YOUR-FASTAPI-URL.onrender.com/analyze", json=payload)
+    response = requests.post("https://github-issue-assistant.onrender.com", json=payload)
 
 
     progress.progress(100, text="✨ Finalizing...")
