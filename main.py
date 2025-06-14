@@ -25,17 +25,18 @@ llm = ChatGoogleGenerativeAI(
 )
 
 app = FastAPI()
-
-# Request schema
-class IssueRequest(BaseModel):
-    repo_url: str
-    issue_numbers: str  # Comma-separated
 @app.get("/")
 async def root():
     return {
         "message": "🚀 GitHub Issue Assistant API is live!",
         "usage": "POST JSON with { repo_url, issue_numbers } to /analyze"
     }
+
+# Request schema
+class IssueRequest(BaseModel):
+    repo_url: str
+    issue_numbers: str  # Comma-separated
+
 
 
 @app.post("/analyze")
