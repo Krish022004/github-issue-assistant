@@ -56,57 +56,54 @@ st.markdown("---")
 with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.header("🔗 Repository Details")
-    st.write("Enter a public GitHub repository and issue numbers (comma-separated):")
+    st.write("Enter a public GitHub repository and an issue number:")
     repo_url = st.text_input(
         "Repository URL",
         value="https://github.com/facebook/react"
     )
-    issue_numbers = st.text_input(
-        "Issue Number(s)",
-        value="1",
-        help="E.g., 1, 2, 3"
+    issue_number = st.number_input(
+        "Issue Number",
+        min_value=1,
+        step=1,
+        value=1
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
 # === ✅ Action Button with animation ===
-if st.button("🚀 Analyze Issues"):
+if st.button("🚀 Analyze Issue"):
     progress = st.progress(0, text="Preparing analysis...")
 
-    # Simulate animation steps
     for pct in range(1, 80, 10):
         time.sleep(0.1)
         progress.progress(pct, text=f"🔍 Processing... {pct}%")
 
     payload = {
         "repo_url": repo_url,
-        "issue_numbers": issue_numbers
+        "issue_number": issue_number  # ✅ single number
     }
-    response = requests.post("https://github-issue-assistant-1.onrender.com", json=payload)
 
+    # ✅ CORRECT backend URL:
+    BACKEND_URL = "https://github-issue-assistant.onrender.com/analyze"
+
+    response = requests.post(BACKEND_URL, json=payload)
 
     progress.progress(100, text="✨ Finalizing...")
 
     if response.status_code == 200:
-        data = response.json()
-        st.success(f"✅ Analysis done in {data['analysis_time_sec']} seconds!")
+        result = response.json()["analysis"]
+
+        st.success(f"✅ Analysis complete!")
         st.toast("🎉 Done! JSON ready to copy or download.")
 
-        results = data["results"]
-
-        for item in results:
-            with st.expander(f"📂 Issue #{item['issue_number']} Details"):
-                if "result" in item:
-                    st.json(item["result"])
-                    st.code(json.dumps(item["result"], indent=2), language="json")
-                else:
-                    st.error(f"⚠️ {item['error']}")
+        st.json(result)
+        st.code(json.dumps(result, indent=2), language="json")
 
         st.download_button(
-            "⬇️ Download All Results",
-            data=json.dumps(results, indent=2),
-            file_name="analysis_results.json",
+            "⬇️ Download JSON",
+            data=json.dumps(result, indent=2),
+            file_name=f"issue_{issue_number}_analysis.json",
             mime="application/json"
         )
 
@@ -115,4 +112,4 @@ if st.button("🚀 Analyze Issues"):
 
 # === ✅ Footer ===
 st.markdown("---")
-st.caption("Built by G Krishna Teja | Source code: [GitHub](https://github.com/Krish022004/github-issue-assistant) | Powered by Streamlit and AI")
+st.caption("Built by G Krishna Teja | [GitHub Repo](https://github.com/Krish022004/github-issue-assistant) | Powered by Streamlit & FastAPI")
