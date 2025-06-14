@@ -1,7 +1,7 @@
 """
 FastAPI backend for Seedling Labs Craft Case.
-Fetches GitHub issue, sends to LangChain Gemini,
-returns clean JSON matching the spec.
+Supports bulk GitHub issues, validates each, calls LangChain Gemini,
+and returns clean JSON array with exact schema.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -12,8 +12,8 @@ import re
 import json
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
+import time
 
-# Load .env.example file
 load_dotenv()
 API_KEY = os.getenv("GOOGLE_API_KEY")
 
@@ -26,28 +26,38 @@ app = FastAPI()
 
 class IssueRequest(BaseModel):
     repo_url: str
-    issue_number: int
+    issue_numbers: str  # support comma-separated list
 
 @app.post("/analyze")
-async def analyze_issue(data: IssueRequest):
-    try:
-        parts = data.repo_url.rstrip("/").split("/")
-        owner, repo = parts[-2], parts[-1]
+async def analyze_issues(data: IssueRequest):
+    start = time.time()
 
-        issue_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{data.issue_number}"
-        comments_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{data.issue_number}/comments"
+    parts = data.repo_url.rstrip("/").split("/")
+    owner, repo = parts[-2], parts[-1]
+    issue_numbers = [n.strip() for n in data.issue_numbers.split(',') if n.strip()]
 
-        async with httpx.AsyncClient() as client_http:
-            issue_resp = await client_http.get(issue_url)
-            issue_resp.raise_for_status()
-            issue = issue_resp.json()
+    results = []
 
-            comments_resp = await client_http.get(comments_url)
-            comments_resp.raise_for_status()
-            comments = comments_resp.json()
-            comments_text = " ".join([c['body'] for c in comments])
+    async with httpx.AsyncClient() as client:
+        for num in issue_numbers:
+            try:
+                issue_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{num}"
+                comments_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{num}/comments"
 
-        prompt = f"""
+                issue_resp = await client.get(issue_url)
+                if issue_resp.status_code == 404:
+                    results.append({"issue_number": num, "error": f"Issue #{num} not found."})
+                    continue
+
+                issue_resp.raise_for_status()
+                issue = issue_resp.json()
+
+                comments_resp = await client.get(comments_url)
+                comments_resp.raise_for_status()
+                comments = comments_resp.json()
+                comments_text = " ".join([c['body'] for c in comments])
+
+                prompt = f"""
 You are an AI assistant. Analyze the following GitHub issue and output ONLY valid JSON with this EXACT structure:
 
 {{
@@ -65,36 +75,27 @@ Body: {issue['body']}
 Comments: {comments_text}
 """
 
-        result = llm.invoke(prompt)
-        content = result.content
+                result = llm.invoke(prompt)
+                content = re.sub(r"```json|```", "", result.content).strip()
+                parsed = json.loads(content)
 
-        clean = re.sub(r"```json|```", "", content).strip()
-        parsed = json.loads(clean)
+                if isinstance(parsed.get("suggested_labels"), dict):
+                    parsed["suggested_labels"] = list(parsed["suggested_labels"].values())
 
-        labels = parsed.get("suggested_labels")
-        if isinstance(labels, dict):
-            parsed["suggested_labels"] = list(labels.values())
+                if len(parsed.get("suggested_labels", [])) > 3:
+                    parsed["suggested_labels"] = parsed["suggested_labels"][:3]
 
-        if isinstance(parsed["suggested_labels"], list) and len(parsed["suggested_labels"]) > 3:
-            parsed["suggested_labels"] = parsed["suggested_labels"][:3]
+                if parsed.get("type") != "bug":
+                    parsed["potential_impact"] = "null"
+                elif parsed.get("potential_impact") in [None, "", "null"]:
+                    parsed["potential_impact"] = "null"
 
-        if parsed.get("type") != "bug":
-            parsed["potential_impact"] = "null"
-        elif parsed.get("potential_impact") in [None, "", "null"]:
-            parsed["potential_impact"] = "null"
+                results.append({"issue_number": num, "result": parsed})
 
-        return {"analysis": parsed}
+            except httpx.HTTPStatusError as e:
+                results.append({"issue_number": num, "error": f"GitHub API error: {e.response.status_code}"})
+            except Exception as e:
+                results.append({"issue_number": num, "error": str(e)})
 
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=f"GitHub API error: {e}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    # This code defines a FastAPI application that analyzes GitHub issues using the Google Generative AI model.
-# It retrieves issue details and comments, constructs a prompt for the model, and returns a structured JSON response.
-# The response includes a summary, issue type, priority score, suggested labels, and potential impact.
-# Ensure you have the necessary environment variables set in a .env file:
-# GOOGLE_API_KEY=your_google_api_key_here
-# Make sure to install the required packages:
-# pip install fastapi httpx langchain-google-genai python-dotenv
-# To run the FastAPI app, use:
-# uvicorn main:app --reload
+    duration = round(time.time() - start, 2)
+    return {"analysis_time_sec": duration, "results": results}

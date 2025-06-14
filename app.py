@@ -1,59 +1,117 @@
 """
-Streamlit frontend for Seedling Labs Craft Case.
-Calls FastAPI backend and displays result.
+Modern Streamlit frontend with animations & styling.
 """
 
 import streamlit as st
 import requests
 import json
-import streamlit.components.v1 as components
+import time
 
-st.set_page_config(page_title="GitHub Issue Assistant")
+# === ✅ Page config ===
+st.set_page_config(
+    page_title="🐙 GitHub Issue Assistant",
+    page_icon="🐙",
+    layout="wide"
+)
 
-st.title("🧑‍💻 AI-Powered GitHub Issue Assistant")
+# === ✅ Top-right dark mode toggle ===
+col1, col2 = st.columns([8, 1], gap="small")
+with col2:
+    dark_mode = st.toggle("🌙 Dark Mode")
 
-repo_url = st.text_input("Repository URL", placeholder="https://github.com/facebook/react")
-issue_number = st.number_input("Issue Number", min_value=1, step=1)
+# === ✅ Strong dark mode styling ===
+if dark_mode:
+    st.markdown("""
+    <style>
+    html, body, .main, .stApp { background-color: #0e1117 !important; color: #c9d1d9 !important; }
+    [data-testid="stSidebar"] { background-color: #161b22 !important; }
+    input, textarea { background-color: #161b22 !important; color: #c9d1d9 !important; }
+    .stButton>button, .stDownloadButton>button {
+        background-color: #21262d !important; color: #c9d1d9 !important; border: 1px solid #30363d;
+        transition: 0.3s; 
+    }
+    .stButton>button:hover, .stDownloadButton>button:hover {
+        background-color: #30363d !important; transform: scale(1.02);
+    }
+    .stCodeBlock, pre, code { background-color: #161b22 !important; color: #c9d1d9 !important; }
+    .card {
+        background-color: #21262d !important;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #30363d;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-if st.button("Analyze Issue"):
-    with st.spinner("Analyzing..."):
-        response = requests.post(
-            "http://127.0.0.1:8000/analyze",
-            json={"repo_url": repo_url, "issue_number": issue_number}
+# === ✅ Fancy title with animation ===
+st.markdown(
+    "<h1 style='text-align: center;'>✨ <span style='color:#f63366;'>AI-Powered GitHub Issue Assistant</span> ✨</h1>",
+    unsafe_allow_html=True
+)
+st.caption("Analyze & summarize GitHub issues instantly with animations & style.")
+
+st.markdown("---")
+
+# === ✅ Stylish Input Card ===
+with st.container():
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.header("🔗 Repository Details")
+    st.write("Enter a public GitHub repository and issue numbers (comma-separated):")
+    repo_url = st.text_input(
+        "Repository URL",
+        value="https://github.com/facebook/react"
+    )
+    issue_numbers = st.text_input(
+        "Issue Number(s)",
+        value="1",
+        help="E.g., 1, 2, 3"
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("---")
+
+# === ✅ Action Button with animation ===
+if st.button("🚀 Analyze Issues"):
+    progress = st.progress(0, text="Preparing analysis...")
+
+    # Simulate animation steps
+    for pct in range(1, 80, 10):
+        time.sleep(0.1)
+        progress.progress(pct, text=f"🔍 Processing... {pct}%")
+
+    payload = {
+        "repo_url": repo_url,
+        "issue_numbers": issue_numbers
+    }
+    response = requests.post("http://127.0.0.1:8000/analyze", json=payload)
+
+    progress.progress(100, text="✨ Finalizing...")
+
+    if response.status_code == 200:
+        data = response.json()
+        st.success(f"✅ Analysis done in {data['analysis_time_sec']} seconds!")
+        st.toast("🎉 Done! JSON ready to copy or download.")
+
+        results = data["results"]
+
+        for item in results:
+            with st.expander(f"📂 Issue #{item['issue_number']} Details"):
+                if "result" in item:
+                    st.json(item["result"])
+                    st.code(json.dumps(item["result"], indent=2), language="json")
+                else:
+                    st.error(f"⚠️ {item['error']}")
+
+        st.download_button(
+            "⬇️ Download All Results",
+            data=json.dumps(results, indent=2),
+            file_name="analysis_results.json",
+            mime="application/json"
         )
-        if response.status_code == 200:
-            result = response.json()["analysis"]
-            json_str = json.dumps(result, indent=2)
 
-            st.json(result)
+    else:
+        st.error(f"❌ Error: {response.status_code} - {response.text}")
 
-            components.html(
-                f"""
-                <textarea id="json-output" style="width: 100%; height: 300px;">{json_str}</textarea><br>
-                <button onclick="navigator.clipboard.writeText(document.getElementById('json-output').value); alert('Copied to clipboard!');">📋 Copy JSON</button>
-                """,
-                height=350,
-            )
-
-        else:
-            st.error(f"Error: {response.status_code} - {response.text}")
-
-        # Display success message
-        st.success("Analysis completed successfully!")
-# This code is a simple Streamlit app that interacts with the FastAPI backend to analyze GitHub issues.
-#         if "suggested_labels" in parsed and isinstance(parsed["suggested_labels"], str):
-#             parsed["suggested_labels"] = [parsed["suggested_labels"]]
-#
-#         if "potential_impact" not in parsed:      
-#             parsed["potential_impact"] = "null"
-#         return parsed     
-#     except Exception as e:
-#         st.error(f"Error: {e}")           
-#         st.error("Failed to analyze the issue. Please check the repository URL and issue number.")
-# This app allows users to input a GitHub repository URL and an issue number, then sends a request to the FastAPI backend to analyze the issue.
-# The response is displayed in a formatted JSON output with a copy button.
-# Note: Ensure the FastAPI backend is running at http://localhost:8000/analyze for this to work.
-# This code is a simple Streamlit app that interacts with the FastAPI backend to analyze GitHub issues.
-# This app allows users to input a GitHub repository URL and an issue number, then sends a request to the FastAPI backend to analyze the issue.
-# The response is displayed in a formatted JSON output with a copy button.
-# Note: Ensure the FastAPI backend is running at http://localhost:8000/analyze for this to work.
+# === ✅ Footer ===
+st.markdown("---")
+st.caption("Built by G Krishna Teja | Source code: [GitHub](https://github.com/Krish022004/github-issue-assistant) | Powered by Streamlit and AI")
