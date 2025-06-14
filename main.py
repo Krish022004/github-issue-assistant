@@ -30,6 +30,13 @@ app = FastAPI()
 class IssueRequest(BaseModel):
     repo_url: str
     issue_numbers: str  # Comma-separated
+@app.get("/")
+async def root():
+    return {
+        "message": "🚀 GitHub Issue Assistant API is live!",
+        "usage": "POST JSON with { repo_url, issue_numbers } to /analyze"
+    }
+
 
 @app.post("/analyze")
 async def analyze_issues(data: IssueRequest):
